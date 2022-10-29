@@ -1,0 +1,19 @@
+[package]
+name = "schemata-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Penumbra Labs <team@penumbra.zone>"]
+description = "Core implementation of the `schemata` crate"
+repository = "https://github.com/penumbra-zone/schemata/"
+license = "MIT OR Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dev-dependencies]
+colored-diff = "0.2"
+
+[dependencies]
+syn = { version = "1", features = ["extra-traits", "full", "fold"] }
+quote = "1"
+proc-macro2 = "1"
+proc-macro-error = "1"

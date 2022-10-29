@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "schemata",
+    "schemata-macro",
+    "schemata-core",
+]
