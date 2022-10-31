@@ -37,7 +37,7 @@ pub struct Segment {
 #[derive(Clone, Debug)]
 pub struct Parameters {
     pub paren_token: Paren,
-    pub parameters: Punctuated<Parameter, Comma>,
+    pub params: Punctuated<Parameter, Comma>,
 }
 
 #[derive(Clone, Debug)]
@@ -128,7 +128,7 @@ impl Parse for Parameters {
         let content;
         Ok(Parameters {
             paren_token: parenthesized!(content in input),
-            parameters: Punctuated::parse_terminated(&content)?,
+            params: Punctuated::parse_terminated(&content)?,
         })
     }
 }

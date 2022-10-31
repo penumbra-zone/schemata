@@ -14,7 +14,7 @@ pub fn schema_internal(input: TokenStream) -> TokenStream {
     match parse2::<syntax::Input>(input) {
         Err(err) => abort!(err),
         Ok(input) => {
-            let output = ir::Node::from(input);
+            let output = ir::Ir::from(input);
             quote!( #output )
         }
     }
