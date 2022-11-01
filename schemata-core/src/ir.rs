@@ -29,6 +29,7 @@ pub struct Node {
 pub struct Duplicate;
 
 pub struct Header {
+    pub root: bool,
     pub docs: Vec<LitStr>,
     pub mod_name: Option<Ident>,
     pub kind: Kind,
@@ -119,6 +120,7 @@ impl From<syntax::Input> for Ir {
             children.into_iter().map(Node::from).collect(),
         ));
         let header = Header {
+            root: true,
             docs,
             mod_name: None, // root node is only one not to have explicit mod name
             kind: Kind::Static(None), // root node is always static
@@ -159,6 +161,7 @@ impl From<syntax::Child> for Node {
         {
             let docs = vec![]; // TODO: scrape docs from attrs
             let header = Header {
+                root: false,
                 docs,
                 mod_name: Some(*name),
                 kind: Kind::Var(ty),
@@ -170,6 +173,7 @@ impl From<syntax::Child> for Node {
         let docs = vec![]; // TODO: scrape docs from attrs
         let renamed = None; // TODO: scrape rename from attrs
         let header = Header {
+            root: false,
             docs,
             mod_name: Some(segment.name),
             kind: Kind::Static(renamed),
