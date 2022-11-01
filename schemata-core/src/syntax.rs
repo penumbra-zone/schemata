@@ -7,7 +7,7 @@ use syn::{
 };
 
 #[derive(Clone, Debug, Default)]
-pub struct Input {
+pub struct Syntax {
     pub attrs: Vec<Attribute>,
     pub children: Vec<Child>,
 }
@@ -48,7 +48,7 @@ pub struct Parameter {
     pub ty: Box<Type>,
 }
 
-impl Parse for Input {
+impl Parse for Syntax {
     fn parse(input: ParseStream) -> Result<Self> {
         let attrs = input.call(Attribute::parse_inner)?;
 
@@ -57,7 +57,7 @@ impl Parse for Input {
             children.push(input.parse()?);
         }
 
-        Ok(Input { attrs, children })
+        Ok(Syntax { attrs, children })
     }
 }
 

@@ -1,11 +1,8 @@
-use std::{
-    collections::{HashMap, HashSet},
-    mem,
-};
+use std::collections::HashMap;
 
-use proc_macro2::TokenStream;
+use proc_macro2::Span;
 use proc_macro_error::emit_error;
-use quote::ToTokens;
+use quote::format_ident;
 use syn::{
     punctuated::{Pair, Punctuated},
     spanned::Spanned,
@@ -15,11 +12,56 @@ use syn::{
 use crate::syntax;
 
 pub struct Ir {
-    settings: Settings,
-    root: Node,
+    pub settings: Settings,
+    pub root: Node,
 }
 
-pub struct Settings {}
+pub struct Settings {
+    pub names: Names,
+    pub extensions: Extensions,
+}
+
+#[allow(non_snake_case)]
+pub struct Names {
+    pub Schema: Ident,
+    pub Path: Ident,
+    pub OwnedPath: Ident,
+    pub Prefix: Ident,
+    pub OwnedPrefix: Ident,
+    pub Key: Ident,
+    pub OwnedKey: Ident,
+    pub Params: Ident,
+    pub OwnedParams: Ident,
+    pub SubPrefix: Ident,
+    pub OwnedSubPrefix: Ident,
+    pub SubKey: Ident,
+    pub OwnedSubKey: Ident,
+}
+
+#[derive(Default, Clone)]
+pub struct Extensions {
+    pub clap: bool,
+}
+
+impl Default for Names {
+    fn default() -> Self {
+        Self {
+            Schema: format_ident!("Schema"),
+            Path: format_ident!("Path"),
+            OwnedPath: format_ident!("OwnedPath"),
+            Prefix: format_ident!("Prefix"),
+            OwnedPrefix: format_ident!("OwnedPrefix"),
+            Key: format_ident!("Key"),
+            OwnedKey: format_ident!("OwnedKey"),
+            Params: format_ident!("Params"),
+            OwnedParams: format_ident!("OwnedParams"),
+            SubPrefix: format_ident!("SubPrefix"),
+            OwnedSubPrefix: format_ident!("OwnedSubPrefix"),
+            SubKey: format_ident!("SubKey"),
+            OwnedSubKey: format_ident!("OwnedSubKey"),
+        }
+    }
+}
 
 pub struct Node {
     pub header: Header,
@@ -29,7 +71,6 @@ pub struct Node {
 pub struct Duplicate;
 
 pub struct Header {
-    pub root: bool,
     pub docs: Vec<LitStr>,
     pub mod_name: Option<Ident>,
     pub kind: Kind,
@@ -37,7 +78,10 @@ pub struct Header {
 
 pub enum Kind {
     Var(Box<Type>),
-    Static(Option<LitStr>),
+    Static {
+        renamed: Option<LitStr>,
+        param_count: usize,
+    },
 }
 
 pub enum Children {
@@ -68,7 +112,11 @@ impl Node {
                     }
                 }
 
-                if let Kind::Static(Some(ref actual_name)) = child.header.kind {
+                if let Kind::Static {
+                    renamed: Some(ref actual_name),
+                    ..
+                } = child.header.kind
+                {
                     if let Some(previous_actual_name) =
                         seen_actual_names.insert(actual_name.value(), actual_name.span())
                     {
@@ -108,22 +156,37 @@ impl Node {
             }
         }
     }
+
+    pub fn is_leaf(&self) -> bool {
+        match &self.children {
+            Err(_) => true,
+            Ok(children) => match children {
+                Children::Leaf(_) => true,
+                Children::Below(_) => false,
+            },
+        }
+    }
 }
 
-impl From<syntax::Input> for Ir {
-    fn from(syntax::Input { attrs, children }: syntax::Input) -> Self {
+impl From<syntax::Syntax> for Ir {
+    fn from(syntax::Syntax { attrs, children }: syntax::Syntax) -> Self {
         // TODO: scrape settings from attrs
-        let settings = Settings {};
+        let settings = Settings {
+            names: Names::default(),
+            extensions: Extensions::default(), // TODO: scrape extensions based on enabled features
+        };
         let docs = vec![]; // TODO: scrape docs from attrs
 
         let children = Ok(Children::Below(
             children.into_iter().map(Node::from).collect(),
         ));
         let header = Header {
-            root: true,
             docs,
             mod_name: None, // root node is only one not to have explicit mod name
-            kind: Kind::Static(None), // root node is always static
+            kind: Kind::Static {
+                renamed: None,
+                param_count: 0,
+            }, // root node is always static and has no parameters
         };
         let mut root = Node { header, children };
 
@@ -154,6 +217,7 @@ impl From<syntax::Child> for Node {
             .params
             .map(|p| p.params)
             .unwrap_or_else(Punctuated::new);
+        let param_count = parameters.len();
 
         while let Some(syntax::Parameter {
             attrs, name, ty, ..
@@ -161,7 +225,6 @@ impl From<syntax::Child> for Node {
         {
             let docs = vec![]; // TODO: scrape docs from attrs
             let header = Header {
-                root: false,
                 docs,
                 mod_name: Some(*name),
                 kind: Kind::Var(ty),
@@ -173,24 +236,14 @@ impl From<syntax::Child> for Node {
         let docs = vec![]; // TODO: scrape docs from attrs
         let renamed = None; // TODO: scrape rename from attrs
         let header = Header {
-            root: false,
             docs,
             mod_name: Some(segment.name),
-            kind: Kind::Static(renamed),
+            kind: Kind::Static {
+                renamed,
+                param_count,
+            },
         };
 
         Node { header, children }
-    }
-}
-
-impl ToTokens for Ir {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.root.to_tokens(&self.settings, tokens);
-    }
-}
-
-impl Node {
-    fn to_tokens(&self, settings: &Settings, tokens: &mut TokenStream) {
-        // TODO: generate all the code
     }
 }
