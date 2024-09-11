@@ -2,7 +2,7 @@
 name = "schemata-core"
 version = "0.1.0"
 edition = "2021"
-authors = ["Penumbra Labs <team@penumbra.zone>"]
+authors = ["Penumbra Labs <team@penumbralabs.xyz"]
 description = "Core implementation of the `schemata` crate"
 repository = "https://github.com/penumbra-zone/schemata/"
 license = "MIT OR Apache-2.0"
